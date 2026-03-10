@@ -1,6 +1,7 @@
 import datetime
 from pprint import pprint
 from curl_cffi.requests import AsyncSession
+from curl_cffi.requests.exceptions import HTTPError
 
 from app import constants as const
 from app.config import config
@@ -8,13 +9,13 @@ from app.logger import logger
 
 
 class Session:
-    def __init__(self):
+    def __init__(self, username, password):
         logger.info("Session created!")
         self.payload = {
             "application_key": config.get("APP_KEY"),
             "id_city": None,
-            "username": config.get("LOGIN"),
-            "password": config.get("PASSWORD"),
+            "username": username,
+            "password": password,
         }
         self.logged_in = False
         self.token: str | None = None
@@ -45,6 +46,8 @@ class Session:
             self.token = data.get("access_token")
             self.logged_in = True
             logger.info("successfully logged in!")
+        else:
+            raise HTTPError
             
     async def get_leaderboard(self):
         logger.info("trying to get leaderboard")
@@ -94,5 +97,3 @@ class Session:
             await self.login()
             return await self.get_current_schedule()
         return []
-
-session = Session()

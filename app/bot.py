@@ -4,13 +4,17 @@ from aiogram.enums import ParseMode
 
 from app.handlers.common import router as common_router
 from app.handlers.request import router as request_router
+from app.handlers.auth import router as auth_router
+
 from app.middleware.whitelist import WhitelistMiddleware
+
 from app.config import config
 from app.logger import logger
 
 dp = Dispatcher()
 dp.include_router(common_router)
 dp.include_router(request_router)
+dp.include_router(auth_router)
 
 dp.message.middleware(WhitelistMiddleware())
 
