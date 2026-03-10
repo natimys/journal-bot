@@ -1,7 +1,7 @@
 import asyncio
 from app.bot import run_bot
+from app.database.postgres import engine
 from app.models import Base
-from app.engine import engine
 
 async def init_db():
     async with engine.begin() as conn:
@@ -11,5 +11,10 @@ async def main():
     await init_db()
     await run_bot()
 
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        print("Starting bot...")
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Bot stopped.")

@@ -1,5 +1,20 @@
-from dotenv import dotenv_values
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import PostgresDsn, RedisDsn
 
-config = {
-    **dotenv_values(".env")
-}
+
+class Config(BaseSettings):
+    BOT_TOKEN: str
+    APP_KEY: str
+    WHITELIST: list[int]
+
+    SECRET_KEY: str
+
+    POSTGRES_URL: PostgresDsn
+    REDIS_URL: RedisDsn
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
+
+config = Config()

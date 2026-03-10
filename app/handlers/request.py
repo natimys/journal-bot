@@ -2,10 +2,10 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 from curl_cffi.requests.exceptions import DNSError
-from app.req import Session
+from app.journal_api import JournalClient
 from app.logger import logger
 
-router = Router(name="Router that works with requests")
+router = Router()
 
 # переделать!
 
@@ -14,7 +14,7 @@ router = Router(name="Router that works with requests")
 #     try:
 #         schedule = await session.get_current_schedule()
 #     except DNSError:
-#         await message.answer("❌ Возникла ошибка на стороне сервера, повторите попытку позже") 
+#         await message.answer("❌ Возникла ошибка на стороне сервера, повторите попытку позже")
 #     else:
 #         lines = [
 #             f"{i}. {item['started_at']} - {item["finished_at"]} | {item['subject_name'].removesuffix(" (РПО)")}"
