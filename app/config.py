@@ -12,6 +12,9 @@ class Config(BaseSettings):
     POSTGRES_URL: PostgresDsn
     REDIS_URL: RedisDsn
 
+    SERVICE_USER_LOGIN: str
+    SERVICE_USER_PASSWORD: str
+    
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
