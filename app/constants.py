@@ -12,3 +12,4 @@ DEFAULT_HEADERS = {
 # get / post data
 GET_STREAM_LEADERS_URL = "https://msapi.top-academy.ru/api/v2/dashboard/progress/leader-stream"
 GET_SCHEDULE_BY_DATE_URL = "https://msapi.top-academy.ru/api/v2/schedule/operations/get-by-date?date_filter="
+GET_AVERAGE_SCORE_URL = "https://msapi.top-academy.ru/api/v2/dashboard/chart/average-progress"

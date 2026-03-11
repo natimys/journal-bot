@@ -12,7 +12,19 @@ class TextManager:
         with open(path, 'r', encoding='utf-8') as f:
             self._texts = yaml.safe_load(f)
     
-    def get(self, key: str, lang: str = "ru") -> str:
-        return self._texts.get(lang, {}).get(key, f"Text {key} not found")
+    def get(self, key: str, lang: str = "ru", **kwargs) -> str:
+        text = self._texts.get(lang, {}).get(key)
+        
+        if text is None:
+            return f"Text {key} not found"
+        
+        if kwargs:
+            try:
+                return text.format(**kwargs)
+            except KeyError as e:
+                logger.error(f"Missing key {e} for translation {key}")
+                return text
+        
+        return text
     
 text_manager =TextManager()

@@ -44,14 +44,14 @@ class JournalClient:
             data = response.json()
             self.token = data.get("access_token")
 
-            await self.redis.set(f"token:{self.telegram_id}", self.token, ex=36000)
+            await self.redis.set(f"user:{self.telegram_id}:token", self.token, ex=36000)
             
             self.logged_in = True
             logger.info(f"User {self.username} successfully logged in!")
 
     async def _make_request(self, url, method="GET", **kwargs):
         if not self.token:
-            cached_token = await self.redis.get(f"token:{self.telegram_id}")
+            cached_token = await self.redis.get(f"user:{self.telegram_id}:token")
             if cached_token:
                 self.token = cached_token.decode()
                 self.logged_in = True

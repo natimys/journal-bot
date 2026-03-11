@@ -16,6 +16,7 @@ dp.include_routers(*all_routers)
 
 dp.message.middleware(WhitelistMiddleware())
 dp.message.middleware(DbSessionMiddleware(session_maker))
+dp.callback_query.middleware(DbSessionMiddleware(session_maker))
 dp.update.middleware(RedisMiddleware(redis_client))
 
 async def run_bot():

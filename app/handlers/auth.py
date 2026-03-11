@@ -45,7 +45,6 @@ async def login(message: Message, session: AsyncSession, redis: Redis):
             or message.from_user.first_name,
             journal_login=journal_login,
             journal_password=encrypted_pass,
-            journal_token=client.token,
         )
 
         await message.answer(text_manager.get("login_success"))

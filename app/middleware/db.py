@@ -27,5 +27,5 @@ class RedisMiddleware(BaseMiddleware):
         self.redis = redis
 
     async def __call__(self, handler, event, data):
-        data["redis"] = self.redis  # Вот теперь aiogram увидит аргумент 'redis'
+        data["redis"] = self.redis
         return await handler(event, data)

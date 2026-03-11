@@ -13,10 +13,12 @@ async def get_user_by_telegram_id(session: AsyncSession, telegram_id: int):
     return result.scalars().first()
 
 
-async def create_user(
-    session: AsyncSession, **kwargs
-):
-    new_user = User(**kwargs)
+async def create_user(session: AsyncSession, telegram_id: int, telegram_username: str, **kwargs):
+    new_user = User(
+        telegram_id=telegram_id,
+        telegram_username=telegram_username,
+        **kwargs
+    )
     session.add(new_user)
     await session.commit()
     return new_user
