@@ -1,15 +1,16 @@
-from app.config import config
-from app.text import text_manager
-
 from typing import Any, Awaitable, Callable, Dict
+
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Message
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.text import text_manager
+from app.config import config
 from app.database.postgres import session_maker
 
 
 class DbSessionMiddleware(BaseMiddleware):
-    def __init__(self, session: session_maker):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
     async def __call__(

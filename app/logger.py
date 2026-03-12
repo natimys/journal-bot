@@ -4,6 +4,7 @@ from functools import wraps
 import time
 import os
 
+# эту штуку заменить на loguru
 class Logger:
     def __init__(self):     
         current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

@@ -19,11 +19,13 @@ class User(Base):
     journal_login: Mapped[str] = mapped_column(String, unique=True, nullable=True)
     journal_password: Mapped[str] = mapped_column(String, nullable=True)
 
+    group: Mapped[str] = mapped_column(String, index=True, nullable=True)
+    
     favorite_homeworks: Mapped[list["FavoriteHomework"]] = relationship(
         "FavoriteHomework", back_populates="user", cascade="all, delete-orphan"
     )
 
-
+# пока не использую
 class FavoriteHomework(Base):
     __tablename__ = "favorite_homeworks"
 

@@ -8,7 +8,6 @@ ru:
   start: |
     👋 <b>Добрый день, {name}!</b>
 
-    Сегодня <b>{lessons_count} пары(-а)</b>
     Средний балл за месяц: <b>{average_score}</b>
 
   help: |
@@ -17,24 +16,30 @@ ru:
     2. /help - получение списка всех команд
     3. /get_schedule - получение расписания на сегодняшний день
   # аутентификация и авторизация
+  unauthorized: "⚠️ Для работы с ботом нужно авторизоваться."
   no_access: "У вас нет доступа"
+  blocked: "Вы заблокированы"
+  too_many_requests: "Слишком много запросов, попробуйте позже"
+  
+  enter_login: "Введите ваш <b>логин</b> от журнала:"
+  enter_password: "Введите ваш <b>пароль</b> от журнала:"
+  checking_auth_data: "⌛ Проверка ваших данных..."
   login_success: "Успешный вход!"
   login_fail: "Ошибка входа"
-  login_format: "Формат: /login логин пароль"
 
   # сообщения при вызове геттеров
   schedule_title: "📅 <b>Расписание на сегодня</b>"
-  schedule_empty: "На сегодня нет занятий"
+  schedule_empty: "❗На сегодня нет занятий"
   schedule_entry: "{started_at} - {finished_at} | {subject_name}"
 
   leaderboard_title: "⭐ <b>Топ-10 лидеров по очкам</b>"
   leaderboard_entry: "{i}. {name} - {score} очков"
 
   # тексты кнопок
-
+  back_to_menu: "🔙 Назад"
   ## домашние задания
-  get_homeworks: "📖 Домашние задания" # главная кнопка
-  menu_homework: | 
+  homeworks_menu_button: "📖 Домашние задания" # главная кнопка
+  homeworks_menu: | 
     📚 Меню домашних заданий
     Истекших: <b>{expired_count}</b>
     Активных: <b>{active_count}</b>
