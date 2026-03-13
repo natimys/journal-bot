@@ -16,6 +16,7 @@ from app.services.cache import update_user_info
 from app.journal_api import JournalClient
 from app.security import decrypt_password
 from app.logger import logger
+from app.services.user import get_user_homeworks_stats
 
 router = Router()
 
@@ -49,11 +50,11 @@ async def cmd_start(
         message = event
 
     await check_user_exists(event, session)
-    
+
     user = await get_user_by_telegram_id(session, telegram_id)
 
     info_raw = await redis.get(f"user:{telegram_id}:info")
-    
+
     info: dict = {}
 
     if not info_raw and user.journal_login and user.journal_password:
@@ -70,7 +71,9 @@ async def cmd_start(
                 await client.login()
                 await update_user_info(client, telegram_id)
             except Exception as err:
-                logger.exception(f"Background update_user_info error for {telegram_id}: {err}")
+                logger.exception(
+                    f"Background update_user_info error for {telegram_id}: {err}"
+                )
             finally:
                 try:
                     await client.close()
@@ -90,13 +93,13 @@ async def cmd_start(
     info.setdefault("active_homeworks", 0)
     info.setdefault("deleted_homeworks", 0)
     info["name"] = message.from_user.first_name
-    
+
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text=text_manager.get("homeworks_menu_button"),
-                    callback_data="menu_homework",
+                    callback_data="menu:homeworks_menu",
                 ),
             ],
             [
@@ -113,6 +116,22 @@ async def cmd_start(
     )
     await message.answer(
         text_manager.get("start").format(**info), reply_markup=keyboard
+    )
+
+
+async def handle_homeworks_menu(callback: CallbackQuery, redis: Redis):
+    await callback.answer()
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=text_manager.get("back_to_menu"), callback_data="menu:main"
+                )
+            ]
+        ]
+    )
+    await callback.message.edit_text(
+        text_manager.get("homeworks_menu"), reply_markup=kb
     )
 
 
@@ -133,16 +152,22 @@ async def handle_menu_navigation(
     elif action == "main":
         await cmd_start(callback, session, redis)
     else:
-        message = event
-        user_id = event.from_user.id
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text=text_manager.get("get_expired_homeworks"), callback_data="get_expired")
+        message = callback.message
+        user_id = callback.message.from_user.id
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=text_manager.get("get_expired_homeworks"),
+                    callback_data="get_expired",
+                )
+            ][
+                InlineKeyboardButton(
+                    text=text_manager.get("back_to_menu"), callback_data="menu:main"
+                )
+            ]
         ]
-        [
-            InlineKeyboardButton(text=text_manager.get("back_to_menu"), callback_data="menu")
-        ]
-    ])
+    )
     stats = await get_user_homeworks_stats(user_id, session)
 
     await message.edit_text(
