@@ -16,7 +16,10 @@ ru:
     2. /help - получение списка всех команд
     3. /get_schedule - получение расписания на сегодняшний день
   # аутентификация и авторизация
-  unauthorized: "⚠️ Для работы с ботом нужно авторизоваться."
+  unauthorized: |
+    ⚠️ <b>Вы не авторизованы</b>
+
+    Используйте /login для входа в систему
   no_access: "У вас нет доступа"
   blocked: "Вы заблокированы"
   too_many_requests: "Слишком много запросов, попробуйте позже"
@@ -24,9 +27,9 @@ ru:
   enter_login: "Введите ваш <b>логин</b> от журнала:"
   enter_password: "Введите ваш <b>пароль</b> от журнала:"
   checking_auth_data: "⌛ Проверка ваших данных..."
-  login_success: "Успешный вход!"
-  login_fail: "Ошибка входа"
-
+  login_success: "✅ Успешный вход!"
+  login_fail: "❌ Ошибка входа"
+  logout_success: "✅ Успешный выход из системы"
   # сообщения при вызове геттеров
   schedule_title: "📅 <b>Расписание на сегодня</b>"
   schedule_empty: "❗На сегодня нет занятий"
@@ -35,18 +38,49 @@ ru:
   leaderboard_title: "⭐ <b>Топ-10 лидеров по очкам</b>"
   leaderboard_entry: "{i}. {name} - {score} очков"
 
+  loading: "🔃 Загрузка..."
   # тексты кнопок
   back_to_menu: "🔙 Назад"
   ## домашние задания
   homeworks_menu_button: "📖 Домашние задания" # главная кнопка
   homeworks_menu: | 
-    📚 Меню домашних заданий
-    Истекших: <b>{expired_count}</b>
-    Активных: <b>{active_count}</b>
-    Удаленных: <b>{deleted_count}</b>
-  upload_homework: "🔃 Загрузить домашнее задание"
-  delete_homework: "❌ Удалить"
+    📚 Домашние задания:
 
+    🔴 Истекших: <b>{expired_count}</b>
+    🟢 Активных: <b>{active_count}</b>
+    ⚪ Удаленных: <b>{deleted_count}</b>
+  
+  homeworks_empty: "Список пуст 📭"
+  
+  # в этих 3 статусах эмодзи не ставить, само подставится в нужных местах
+  homeworks_expired: "Просроченные"
+  homeworks_active: "Активные"
+  homeworks_deleted: "Удаленные"
+
+  homeworks_not_found: "Данные задания не найдены или устарели 🔒"
+
+  # страница самого дз
+  teacher: "👤 Преподаватель:"
+  expires_at: "⏳ Срок до:"
+  subject: "📝 Тема:"
+  comment: "💬 Комментарий:"
+
+  download_homework: "📎 Скачать"
+  upload_homework: "🔃 Загрузить домашнее задание"
+  uploading_homework_menu: |
+    📥 <b>Загрузка ответа</b>
+    Присылайте файлы (фото или документы) по одному или пачкой.
+    Когда закончите, нажмите кнопку ниже.
+  send_homework: "✅ Отправить"
+  undo_homework: "❌ Отмена"
+  file_added: "✅ Файл добавлен. Всего: <b>{file_count}</b>"
+  send_homework_files_first: "❌ Сначала пришлите файлы!"
+  archiving_files: "⏳ <b>Начинаю упаковку файлов...</b>"
+  sending_homeworks_to_journal: "🚀 <b>Отправляю архив в журнал...</b>"
+  homework_send_success: "✅ <b>Задание успешно отправлено!</b>"
+  homework_send_error: | 
+    ❌ <b>Ошибка при отправке:</b>
+    <code>{error}</code>
   ## расписание и лидерборд
   get_schedule: "📅 Расписание"
   get_leaderboard: "⭐ Лидерборд"

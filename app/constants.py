@@ -20,9 +20,7 @@ GET_AVERAGE_SCORE_URL = (
     "https://msapi.top-academy.ru/api/v2/dashboard/chart/average-progress"
 )
 
-GET_HOMEWORKS_URL = (
-    "https://msapi.top-academy.ru/api/v2/homework/operations/list?page={page}&status={status}&type=0&group_id={group_id}"
-)
+GET_HOMEWORKS_URL = "https://msapi.top-academy.ru/api/v2/homework/operations/list?page={page}&status={status}&type=0&group_id={group_id}"
 """URL для получения дз с различными статусами  
 ### page
 счёт начинается с 1  
@@ -41,6 +39,13 @@ GET_HOMEWORKS_URL = (
     GET_HOMEWORKS_URL.format(page=1, status=0, group_id=3)
 """
 
-GET_USER_INFO_URL = (
-    "https://msapi.top-academy.ru/api/v2/settings/user-info"
-)
+# получение буквально инфы о пользователе, пока что используется только для получения группы
+GET_USER_INFO_URL = "https://msapi.top-academy.ru/api/v2/settings/user-info"
+
+# получение % посещаемости
+GET_ATTENDANCE_URL = "https://msapi.top-academy.ru/api/v2/dashboard/chart/attendance"
+
+# ОЧЕНЬ поздно нашел этот эндпоинт, считал все вручную, теперь все будет полегче
+GET_HOMEWORKS_COUNT_URL = "https://msapi.top-academy.ru/api/v2/count/homework"
+CREATE_HOMEWORK_URL = "https://msapi.top-academy.ru/api/v2/homework/operations/create"
+SAVE_HOMEWORK_URL = "https://msapi.top-academy.ru/api/v2/homework/evaluation/operations/save"

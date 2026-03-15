@@ -1,18 +1,19 @@
-from datetime import datetime
-import json
-from typing import Literal
 import asyncio
+import json
+from datetime import datetime
+from typing import Literal
 
-from curl_cffi.requests.exceptions import HTTPError
+from redis.asyncio import Redis
 
-from app.database.postgres import session_maker
-from app.database.redis import redis_client
+import app.constants as const
 from app.config import config
 from app.crud import get_user_by_telegram_id
+from app.database.postgres import session_maker
+from app.database.redis import redis_client
 from app.journal_api import JournalClient
 from app.logger import logger
 
-import app.constants as const
+api_semaphore = asyncio.Semaphore(3)
 
 
 async def update_schedule(client: JournalClient):
@@ -30,7 +31,7 @@ async def update_leaders(client: JournalClient):
 async def get_homeworks_with_status(
     client: JournalClient, status: Literal[0, 1, 2, 3, 5], group_id: int
 ) -> list[dict]:
-    """_summary_
+    """получение домашек с опр. статусом
 
     Args:
         client (JournalClient): Клиент журнала
@@ -40,68 +41,78 @@ async def get_homeworks_with_status(
     """
     homeworks = []
     page = 1
+    seen_ids = set()
 
-    max_pages = 50
-    while True:
+    while page <= 50:
+        url = const.GET_HOMEWORKS_URL.format(
+            page=page, status=status, group_id=group_id
+        )
         try:
-            url = const.GET_HOMEWORKS_URL.format(
-                page=page, status=status, group_id=group_id
-            )
             response_data = await client._make_request(url)
-
-            if not isinstance(response_data, list):
-                logger.error(
-                    f"Unexpected homework response type {type(response_data)} for"
-                    f" status={status}, page={page}, gid={group_id}"
-                )
-                break
 
             if not response_data:
                 break
 
-            homeworks.extend(response_data)
-            page += 1
+            added_on_this_page = 0
+            for hw in response_data:
+                hw_id = hw.get("id")
+                if hw_id in seen_ids:
+                    continue
 
-            if page > max_pages:
-                logger.warning(
-                    f"Reached page limit ({max_pages}) for homeworks (status={status}, gid={group_id}),"
-                    " stopping to avoid infinite loop."
+                seen_ids.add(hw_id)
+                added_on_this_page += 1
+
+                await redis_client.set(
+                    f"hw:content:{hw_id}",
+                    json.dumps(
+                        {
+                            "subject": hw.get("name_spec"),
+                            "description": hw.get("theme"),
+                            "file_url": hw.get("file_path"),
+                            "teacher": hw.get("fio_teach"),
+                            "comment": hw.get("comment"),
+                            "overdue_time": hw.get("overdue_time"),
+                        }
+                    ),
+                    ex=604800,
                 )
+
+                homeworks.append(
+                    {
+                        "id": hw_id,
+                        "subject": hw.get("name_spec"),
+                        "date_limit": hw.get("overdue_time"),
+                    }
+                )
+
+            if added_on_this_page == 0:
                 break
-        except HTTPError as e:
-            if e.code == 404:
-                logger.info(f"Getting homeworks ended at {page-1}. Status: {status}")
-                break
-            if e.code == 401:
-                logger.warning(f"Unauthorized when fetching homeworks (status={status}, page={page}, gid={group_id}). Stopping.")
-                break
-            raise e
-        await asyncio.sleep(0.3)
+
+            page += 1
+            await asyncio.sleep(0.2)
+
+        except Exception as e:
+            logger.error(f"Error at page {page}: {e}")
+            break
     return homeworks
 
 
-async def get_count_homeworks_with_status(
-    client: JournalClient, status: Literal[0, 1, 2, 3, 5], group_id: int
+async def update_all_homeworks_cache(
+    client: JournalClient, telegram_id: int, group_id: int
 ):
-    homeworks = await get_homeworks_with_status(client, status, group_id)
-    return len(homeworks)
-
-async def update_all_homeworks_cache(client: JournalClient, telegram_id: int, group_id: int):
     """
     Собирает ДЗ всех статусов и сохраняет в редис, возвращает счетчики для статистики.
     """
     all_data = {}
     counts = {}
-    
+
     for status in [0, 3, 5]:
         hw_list = await get_homeworks_with_status(client, status, group_id)
         all_data[status] = hw_list
         counts[status] = len(hw_list)
 
     await redis_client.set(
-        f"user:{telegram_id}:homeworks_full", 
-        json.dumps(all_data), 
-        ex=10800
+        f"user:{telegram_id}:homeworks_full", json.dumps(all_data), ex=10800
     )
     return counts
 
@@ -113,44 +124,53 @@ async def update_user_info(client: JournalClient, telegram_id: int):
         client (JournalClient): Клиент журнала
         telegram_id (int): Telegram ID пользователя
     """
-    average_score = 0
-    try:
-        score_per_month: list[dict] = await client._make_request(
-            const.GET_AVERAGE_SCORE_URL
-        )
-        for date in score_per_month:
-            if date.get("date") == datetime.now().strftime("%Y-%m-01"):
-                average_score = date.get("points")
-                break
-    except Exception as e:
-        logger.error(f"Failed to fetch average score for {telegram_id}: {e}")
-
-    async with session_maker() as session:
-        user = await get_user_by_telegram_id(session, telegram_id)
 
     try:
-        gid = int(user.group) if user.group is not None else None
-    except ValueError:
-        gid = None
+        average_score = 0
+        counts = {0: 0, 3: 0, 5: 0}
 
-    counts = {0: 0, 3: 0, 5: 0}
-    if gid is not None:
         try:
-            counts = await update_all_homeworks_cache(client, telegram_id, gid)
-        except HTTPError as e:
-            logger.error(f"Failed to update homeworks cache for {telegram_id}, gid={gid}: {e}")
+            counters_raw = await client._make_request(const.GET_HOMEWORKS_COUNT_URL)
+            remote_counts = {
+                item["counter_type"]: item["counter"] for item in counters_raw
+            }
+            for status in [0, 3, 5]:
+                counts[status] = remote_counts.get(status, 0)
         except Exception as e:
-            logger.exception(f"Unexpected error while updating homeworks for {telegram_id}: {e}")
+            logger.error(f"Failed to fetch homework counts for {telegram_id}: {e}")
 
-    user_info = {
-        "average_score": average_score,
-        "expired_count": counts.get(0, 0),
-        "active_count": counts.get(3, 0),
-        "deleted_count": counts.get(5, 0),
-    }
-    await redis_client.set(f"user:{telegram_id}:info", json.dumps(user_info), ex=10800)
+        try:
+            score_per_month = await client._make_request(const.GET_AVERAGE_SCORE_URL)
+            current_month = datetime.now().strftime("%Y-%m-01")
+            for date in score_per_month:
+                if date.get("date") == current_month:
+                    average_score = date.get("points")
+                    break
+        except Exception:
+            pass
+
+        user_info = {
+            "average_score": average_score,
+            "expired_count": counts.get(0, 0),
+            "active_count": counts.get(3, 0),
+            "deleted_count": counts.get(5, 0),
+        }
+        await redis_client.set(
+            f"user:{telegram_id}:info", json.dumps(user_info), ex=10800
+        )
+
+        async with session_maker() as session:
+            user = await get_user_by_telegram_id(session, telegram_id)
+            gid = int(user.group) if user and user.group else None
+
+        if gid:
+            await update_all_homeworks_cache(client, telegram_id, gid)
+
+    except Exception as e:
+        logger.error(f"Global error in update_user_info for {telegram_id}: {e}")
 
 
+# ПЕРЕДЕЛАТЬ, РАСПИСАНИЕ БЕРЕТСЯ ТОЛЬКО ИЗ ГРУППЫ СЕРВИСНОГО ЮЗЕРА
 async def update_cache():
     """Обновление общего кеша
 
@@ -170,4 +190,11 @@ async def update_cache():
         logger.error(e)
         raise e
     finally:
-        client.close()
+        await client.close()
+
+
+async def clear_user_redis_data(redis: Redis, telegram_id: int):
+    pattern = f"user:{telegram_id}:*"
+    async for key in redis.scan_iter(match=pattern):
+        await redis.delete(key)
+    await redis.delete(f"lock:update:{telegram_id}")

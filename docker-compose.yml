@@ -2,6 +2,7 @@ services:
   bot:
     build: .
     restart: always
+    container_name: journal_bot
     depends_on:
       db:
         condition: service_healthy
@@ -14,6 +15,7 @@ services:
 
   db:
     image: postgres:latest
+    container_name: journal_db
     restart: always
     env_file:
       - .env
@@ -31,6 +33,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    container_name: journal_redis
     restart: always
     volumes:
       - redis_data:/data

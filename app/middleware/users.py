@@ -35,7 +35,7 @@ class AuthMiddleware(BaseMiddleware):
         if not user or not user.journal_login:
             text = text_manager.get("auth_required")
             if isinstance(event, Message):
-                await event.answer(text, parse_mode="Markdown")
+                await event.answer(text)
             else:
                 await event.answer(text, show_alert=True)
             return

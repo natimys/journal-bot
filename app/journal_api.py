@@ -1,11 +1,19 @@
+import io
+import asyncio
+import time
 from typing import Literal
 
+from curl_cffi import CurlMime
 from curl_cffi.requests import AsyncSession
+from redis.asyncio import Redis
 
 from app import constants as const
 from app.config import config
 from app.logger import logger
-from redis.asyncio import Redis
+
+_last_request_time = 0
+_request_lock = asyncio.Lock()
+api_semaphore = asyncio.Semaphore(3)
 
 
 class JournalClient:
@@ -65,7 +73,9 @@ class JournalClient:
                 pass
             if response.status_code == 429:
                 logger.warning(f"Rate limited when logging in user {self.username!r}")
-            logger.error(f"Login request failed for {self.username!r}: {err} status={response.status_code} body={text}")
+            logger.error(
+                f"Login request failed for {self.username!r}: {err} status={response.status_code} body={text}"
+            )
             raise
 
         if response.status_code == 200:
@@ -73,19 +83,21 @@ class JournalClient:
             self.token = data.get("access_token")
 
             if not self.token:
-                logger.error(f"Login succeeded but no access_token returned for {self.username!r}")
+                logger.error(
+                    f"Login succeeded but no access_token returned for {self.username!r}"
+                )
                 raise RuntimeError("Missing access token from login response")
 
-            await self.redis.set(f"user:{self.telegram_id}:token", self.token, ex=36000)
+            await self.redis.set(f"user:{self.telegram_id}:token", self.token, ex=1800)
 
             self.logged_in = True
             logger.info(f"User {self.username!r} successfully logged in!")
-            
+
     async def get_info(self) -> dict:
         return await self._make_request(const.GET_USER_INFO_URL)
-    
+
     async def _make_request(
-        self, url: str, method: Literal["GET", "POST"] = "GET", **kwargs
+        self, url: str, method: Literal["GET", "POST"] = "GET", retries=3, **kwargs
     ) -> dict:
         """Создание запросов на API журнала
 
@@ -96,44 +108,123 @@ class JournalClient:
         Returns:
             dict: Возвращает json ответа от сервера в виде словаря
         """
+        global _last_request_time
+        async with api_semaphore:
+            async with _request_lock:
+                now = time.time()
+                delta = now - _last_request_time
+                if delta < 0.5:
+                    await asyncio.sleep(0.5 - delta)
+                _last_request_time = time.time()
 
+            if not self.token:
+                cached_token = await self.redis.get(f"user:{self.telegram_id}:token")
+                if cached_token:
+                    self.token = cached_token.decode()
+                    self.logged_in = True
+            if not self.token:
+                await self.login()
+
+            current_headers = {**self.api_headers, **kwargs.pop("headers", {})}
+
+            try:
+                response = await self._http_session.request(
+                    method, url, headers=current_headers, timeout=15, **kwargs
+                )
+
+                if response.status_code == 429:
+                    if retries > 0:
+                        logger.warning(f"429 hit. Retrying... ({retries} left)")
+                        await asyncio.sleep(10)
+                        return await self._make_request(
+                            url, method, retries=retries - 1, **kwargs
+                        )
+                    else:
+                        logger.error("Max retries reached for 429. Giving up.")
+                        raise Exception("API rate limit exceeded")
+
+                response.raise_for_status()
+                return response.json()
+            except Exception as e:
+                if getattr(e, "code", None) == 429:
+                    await asyncio.sleep(5)
+                    return await self._make_request(url, method, **kwargs)
+                raise
+
+    async def close(self):
+        await self._http_session.close()
+
+    async def upload_homework(
+        self, zip_data: io.BytesIO, filename: str, homework_id: int
+    ):
         if not self.token:
             cached_token = await self.redis.get(f"user:{self.telegram_id}:token")
             if cached_token:
                 self.token = cached_token.decode()
-                self.logged_in = True
-        if not self.token:
-            await self.login()
+            else:
+                await self.login()
 
-        current_headers = {**self.api_headers, **kwargs.pop("headers", {})}
+        headers = self.api_headers.copy()
+        headers.pop("Content-Type", None)
 
-        try:
-            response = await self._http_session.request(
-                method, url, headers=current_headers, timeout=10, **kwargs
-            )
-        except Exception as e:
-            logger.error(f"HTTP request error to {url}: {e}")
-            raise
+        logger.info(f"Uploading with token starting with: {self.token[:10]}...")
 
-        if response.status_code == 401: # авторелогин если токен юзера истек
-            logger.warning("Token expired, retrying login...")
-            self.logged_in = False
-            await self.login()
-            response = await self._http_session.request(
-                method, url, headers=self.api_headers, timeout=10, **kwargs
-            )
+        mp_create = CurlMime()
+        mp_create.addpart(name="id", data=str(homework_id))
+        mp_create.addpart(
+            name="file",
+            filename=filename,
+            content_type="application/zip",
+            data=zip_data.getvalue(),
+        )
 
         try:
-            response.raise_for_status()  # автоматически вызывает исключение если произошла ошибка
-        except Exception as err:
-            text = None
-            try:
-                text = response.text
-            except Exception:
-                pass
-            logger.error(f"API request to {url} failed: {err} status={response.status_code} body={text}")
-            raise
-        return response.json()
+            response_create = await self._http_session.post(
+                const.CREATE_HOMEWORK_URL,
+                headers=headers,
+                multipart=mp_create,
+                timeout=60,
+            )
 
-    async def close(self):
-        await self._http_session.close()
+            if response_create.status_code == 401:
+                logger.error(
+                    "401 Unauthorized during CREATE. Trying to re-login and retry..."
+                )
+                await self.login()
+                headers["Authorization"] = f"Bearer {self.token}"
+                response_create = await self._http_session.post(
+                    const.CREATE_HOMEWORK_URL,
+                    headers=headers,
+                    multipart=mp_create,
+                    timeout=60,
+                )
+
+            response_create.raise_for_status()
+            create_data = response_create.json()
+            internal_file_id = create_data.get("id")
+
+        finally:
+            mp_create.close()
+
+        import json
+
+        save_payload = {
+            "id": internal_file_id,
+            "idDomZad": homework_id,
+            "idStud": None,
+            "mark": 0,
+            "comment": "Sent via Bot",
+            "tags": [],
+        }
+
+        mp_save = CurlMime()
+        mp_save.addpart(name="EvaluationHomeworkForm", data=json.dumps(save_payload))
+
+        try:
+            response_save = await self._http_session.post(
+                const.SAVE_HOMEWORK_URL, headers=headers, multipart=mp_save
+            )
+            response_save.raise_for_status()
+            return response_save.json()
+        finally:
+            mp_save.close()

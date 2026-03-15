@@ -34,7 +34,7 @@ dp.message.middleware(
     ThrottlingMiddleware(redis=redis_client, limit=500)
 )
 dp.callback_query.middleware(
-    ThrottlingMiddleware(redis=redis_client, limit=0.5)
+    ThrottlingMiddleware(redis=redis_client, limit=500)
 )
 
 # мидлвары для работы с базой данных, прокидывают сессию в хэндлеры

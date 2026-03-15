@@ -1,13 +1,10 @@
 import json
 
 from aiogram import Router, F
-from aiogram import Router, F
-from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardMarkup, InlineKeyboardButton
 from redis.asyncio import Redis
 
-from app.journal_api import JournalClient
 from app.logger import logger
 from app.text import text_manager
 
@@ -33,6 +30,7 @@ async def format_schedule(schedule: dict):
 
 @router.callback_query(F.data.startswith("get_schedule:"))
 async def get_schedule(callback: CallbackQuery, redis: Redis):
+    logger.info(f"received get_schedule call from {callback.from_user.id}")
     day_type = callback.data.split(":")[1]
     redis_key = f"cache:schedule:{day_type}"
     schedule_raw = await redis.get(redis_key)

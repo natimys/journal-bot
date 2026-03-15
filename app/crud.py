@@ -1,6 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models import User
+
 
 # создал первым делом это, пока не знаю зачем
 async def get_user_by_id(session: AsyncSession, id: int):
@@ -13,18 +15,27 @@ async def get_user_by_telegram_id(session: AsyncSession, telegram_id: int):
     return result.scalars().first()
 
 
-async def create_user(session: AsyncSession, telegram_id: int, telegram_username: str, **kwargs):
+async def delete_user_by_telegram_id(session: AsyncSession, telegram_id: int):
+    user = await get_user_by_telegram_id(session, telegram_id)
+    if user:
+        await session.delete(user)
+        await session.commit()
+        return True
+    return False
+
+
+async def create_user(
+    session: AsyncSession, telegram_id: int, telegram_username: str, **kwargs
+):
     """Создание нового пользователя в БД
 
     Args:
         session (AsyncSession): Сессия БД, мидлвер автоматом подставит то что надо, ставьте AsyncSession
         telegram_id (int): Telegram ID пользователя
-        telegram_username (str): Telegram Username пользователя 
+        telegram_username (str): Telegram Username пользователя
     """
     new_user = User(
-        telegram_id=telegram_id,
-        telegram_username=telegram_username,
-        **kwargs
+        telegram_id=telegram_id, telegram_username=telegram_username, **kwargs
     )
     session.add(new_user)
     await session.commit()
