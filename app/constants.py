@@ -14,7 +14,10 @@ GET_STREAM_LEADERS_URL = (
     "https://msapi.top-academy.ru/api/v2/dashboard/progress/leader-stream"
 )
 GET_SCHEDULE_BY_DATE_URL = (
-    "https://msapi.top-academy.ru/api/v2/schedule/operations/get-by-date?date_filter="
+    "https://msapi.top-academy.ru/api/v2/schedule/operations/get-by-date?date_filter={date}"
+)
+GET_SCHEDULE_RANGE_URL = (
+    "https://msapi.top-academy.ru/api/v2/schedule/operations/get-by-date-range?date_start={start}&date_end={end}"
 )
 GET_AVERAGE_SCORE_URL = (
     "https://msapi.top-academy.ru/api/v2/dashboard/chart/average-progress"

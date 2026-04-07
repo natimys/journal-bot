@@ -94,9 +94,9 @@ class JournalClient:
             logger.info(f"User {self.username!r} successfully logged in!")
 
     async def get_info(self) -> dict:
-        return await self._make_request(const.GET_USER_INFO_URL)
+        return await self.make_request(const.GET_USER_INFO_URL)
 
-    async def _make_request(
+    async def make_request(
         self, url: str, method: Literal["GET", "POST"] = "GET", retries=3, **kwargs
     ) -> dict:
         """Создание запросов на API журнала
@@ -136,7 +136,7 @@ class JournalClient:
                     if retries > 0:
                         logger.warning(f"429 hit. Retrying... ({retries} left)")
                         await asyncio.sleep(10)
-                        return await self._make_request(
+                        return await self.make_request(
                             url, method, retries=retries - 1, **kwargs
                         )
                     else:
@@ -148,7 +148,7 @@ class JournalClient:
             except Exception as e:
                 if getattr(e, "code", None) == 429:
                     await asyncio.sleep(5)
-                    return await self._make_request(url, method, **kwargs)
+                    return await self.make_request(url, method, **kwargs)
                 raise
 
     async def close(self):

@@ -98,7 +98,6 @@ async def process_password(
         logger.error(f"Login flow error for {message.from_user.id}: {e}")
         await status_msg.edit_text(text_manager.get("login_fail"))
         await state.clear()
-        raise e
 
 
 @router.message(Command("logout"))

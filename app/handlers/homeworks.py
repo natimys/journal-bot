@@ -160,7 +160,7 @@ async def process_homework_files(message: Message, state: FSMContext):
     if not message.media_group_id:
         file_count = len(files)
         await message.reply(
-            text_manager.get("file_added".format(file_count=file_count))  # noqa: F522
+            text_manager.get("file_added").format(file_count=file_count)  # noqa: F522
         )
     else:
         pass

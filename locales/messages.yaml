@@ -9,7 +9,7 @@ ru:
     👋 <b>Добрый день, {name}!</b>
 
     Средний балл за месяц: <b>{average_score}</b>
-
+    Процент посещаемости за месяц: <b>{average_attendance}%</b>
   help: |
     <b>Команды</b>
     1. /start - отображение главного меню
@@ -30,14 +30,7 @@ ru:
   login_success: "✅ Успешный вход!"
   login_fail: "❌ Ошибка входа"
   logout_success: "✅ Успешный выход из системы"
-  # сообщения при вызове геттеров
-  schedule_title: "📅 <b>Расписание на сегодня</b>"
-  schedule_empty: "❗На сегодня нет занятий"
-  schedule_entry: "{started_at} - {finished_at} | {subject_name}"
-
-  leaderboard_title: "⭐ <b>Топ-10 лидеров по очкам</b>"
-  leaderboard_entry: "{i}. {name} - {score} очков"
-
+  group_not_found: "❌ Ваша группа не найдена. Обратитесь в поддержку"
   loading: "🔃 Загрузка..."
   # тексты кнопок
   back_to_menu: "🔙 Назад"
@@ -81,6 +74,38 @@ ru:
   homework_send_error: | 
     ❌ <b>Ошибка при отправке:</b>
     <code>{error}</code>
-  ## расписание и лидерборд
-  get_schedule: "📅 Расписание"
+  # расписание
+  schedule_menu_button: "📅 Расписание"
+  schedule_menu_title: |
+    ℹ️ <b>Расписание</b>
+    
+    Выбери период, чтобы увидеть актуальный график занятий:
+  get_schedule_today: "📍 Сегодня"
+  schedule_today_label: "✨ <b>Расписание на сегодня</b>"
+
+  get_schedule_tomorrow: "🌅 Завтра"
+  schedule_tomorrow: "📅 <b>Расписание на завтра</b>"
+
+  get_schedule_week: "🗓️ Неделя"
+  schedule_week: "📑 <b>Расписание на всю неделю</b>"
+
+  schedule_empty: "🕊️ <b>На сегодня нет занятий!</b>"
+  get_schedule_error: "❌ Ошибка при получении расписания. Попробуйте позже."
+  schedule_entry: "⏰ {started_at} - {finished_at} | 📖 {subject_name}"
+
+
+  # дни недели, тут укорачиваю с weekday до wd
+  wd_0: "Понедельник"
+  wd_1: "Вторник"
+  wd_2: "Среда"
+  wd_3: "Четверг"
+  wd_4: "Пятница"
+  wd_5: "Суббота"
+  wd_6: "Воскресенье"
+  schedule_day_header: "🗓 <b>{weekday_name}, {date}</b>"
+
+  leaderboard_title: "⭐ <b>Топ-10 лидеров по очкам</b>"
+  leaderboard_entry: "{i}. {name} - {score} очков"
+
+  # лидерборд
   get_leaderboard: "⭐ Лидерборд"

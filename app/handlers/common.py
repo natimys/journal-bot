@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud import create_user, get_user_by_telegram_id
 from app.database.redis import Redis
-from app.handlers.getters import get_leaderboard, get_schedule
+from app.handlers.getters import get_leaderboard
+from app.handlers.schedule import handle_schedule_menu
 from app.handlers.homeworks import get_homeworks_keyboard, handle_homeworks_menu
 from app.journal_api import JournalClient
 from app.logger import logger
@@ -102,6 +103,7 @@ async def cmd_start(
         info = {}
 
     info.setdefault("average_score", text_manager.get("loading"))
+    info.setdefault("average_attendance", text_manager.get("loading"))
     info["name"] = event.from_user.first_name
 
     keyboard = InlineKeyboardMarkup(
@@ -114,7 +116,7 @@ async def cmd_start(
             ],
             [
                 InlineKeyboardButton(
-                    text=text_manager.get("get_schedule"),
+                    text=text_manager.get("schedule_menu_button"),
                     callback_data="menu:schedule_menu",
                 ),
                 InlineKeyboardButton(
@@ -168,7 +170,7 @@ async def handle_menu_navigation(
         return
 
     elif action == "schedule_menu":
-        return await get_schedule(callback, redis)
+        return await handle_schedule_menu(callback)
     elif action == "leaderboard_menu":
         return await get_leaderboard(callback, redis)
 
