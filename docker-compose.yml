@@ -1,0 +1,48 @@
+services:
+  bot:
+    build: .
+    restart: always
+    container_name: journal_bot
+    depends_on:
+      db:
+        condition: service_healthy
+      redis: 
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+
+  db:
+    image: postgres:latest
+    container_name: journal_db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: database
+    volumes:
+      - db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: journal_redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:
+  redis_data:
