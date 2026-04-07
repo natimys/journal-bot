@@ -4,8 +4,13 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardMarkup, InlineKeyboardButton
 from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud import get_user_by_telegram_id
+from app.journal_api import JournalClient
 from app.logger import logger
+from app.security import decrypt_password
+from app.services.cache import update_leaders
 from app.text import text_manager
 
 router = Router()
@@ -28,36 +33,23 @@ async def format_schedule(schedule: dict):
     return text
 
 
-@router.callback_query(F.data.startswith("get_schedule:"))
-async def get_schedule(callback: CallbackQuery, redis: Redis):
-    logger.info(f"received get_schedule call from {callback.from_user.id}")
-    day_type = callback.data.split(":")[1]
-    redis_key = f"cache:schedule:{day_type}"
-    schedule_raw = await redis.get(redis_key)
-    await callback.answer()
-
-    if not schedule_raw:
-        return await callback.answer(text_manager.get("schedule_empty"))
-
-    schedule = json.loads(schedule_raw)
-    text = await format_schedule(schedule)
-    back_to_menu_button = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="🔙 Назад", callback_data="menu:homeworks_menu")]
-        ]
-    )
-    logger.info(
-        f"schedule {day_type} called, responsed to @{callback.from_user.username}"
-    )
-    await callback.message.edit_text(text, reply_markup=back_to_menu_button)
-
-
 @router.callback_query(F.data == "get_leaderboard")
-async def get_leaderboard(callback: CallbackQuery, redis: Redis):
+async def get_leaderboard(callback: CallbackQuery, redis: Redis, session: AsyncSession):
     await callback.answer()
     leaderboard = await redis.get("cache:leaderboard")
     if leaderboard:
         leaderboard = json.loads(leaderboard)
+    else:
+        user_id = callback.from_user.id
+        user = await get_user_by_telegram_id(session, user_id)
+        client = JournalClient(
+            username=user.journal_login,
+            password=decrypt_password(user.journal_password),
+            telegram_id=callback.from_user.id,
+            redis_client=redis
+        )
+        await update_leaders(client)
+        leaderboard = await redis.get("cache:leaderboard")
     lines = [
         text_manager.get("leaderboard_entry").format(
             i=i, name=item["full_name"], score=item["amount"]

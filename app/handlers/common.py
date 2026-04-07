@@ -172,6 +172,6 @@ async def handle_menu_navigation(
     elif action == "schedule_menu":
         return await handle_schedule_menu(callback)
     elif action == "leaderboard_menu":
-        return await get_leaderboard(callback, redis)
+        return await get_leaderboard(callback, redis, session)
 
     await callback.answer("Раздел в разработке 🚧")
