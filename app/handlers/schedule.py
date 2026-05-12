@@ -15,6 +15,8 @@ from app.text import text_manager
 
 router = Router()
 
+# спустя 3 месяца перечитываю и ничего не понимаю что тут написано
+
 
 # @router.callback_query(F.data == "menu:schedule_menu")
 async def handle_schedule_menu(callback: CallbackQuery):

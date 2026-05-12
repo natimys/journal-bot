@@ -119,7 +119,7 @@ async def handle_hw_view(callback: CallbackQuery, redis: Redis):
 async def start_homework_upload(callback: CallbackQuery, state: FSMContext):
     hw_id = callback.data.split(":")[1]
 
-    await state.update_data(hw_id=hw_id, files=[])
+    await state.update_data(hw_id=hw_id, files=[], return_to="menu:homeworks_menu")
 
     await state.set_state(HomeworkUpload.waiting_for_files)
 
@@ -199,12 +199,13 @@ async def handle_hw_submit(
         )
 
         logger.info(f"Full upload cycle finished: {result}")
+        return_to = data.get("return_to", "menu:homeworks_menu")
         kb = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
                         text=text_manager.get("back_to_menu"),
-                        callback_data="menu:homeworks_menu",
+                        callback_data=return_to,
                     )
                 ]
             ]
