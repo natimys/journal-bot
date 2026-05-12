@@ -12,6 +12,8 @@ from app.database.redis import Redis
 from app.handlers.getters import get_leaderboard
 from app.handlers.schedule import handle_schedule_menu
 from app.handlers.homeworks import get_homeworks_keyboard, handle_homeworks_menu
+from app.handlers.labworks import handle_labworks_menu
+from app.services.user import get_labworks_keyboard
 from app.journal_api import JournalClient
 from app.logger import logger
 from app.security import decrypt_password
@@ -112,7 +114,11 @@ async def cmd_start(
                 InlineKeyboardButton(
                     text=text_manager.get("homeworks_menu_button"),
                     callback_data="menu:homeworks_menu",
-                )
+                ),
+                InlineKeyboardButton(
+                    text=text_manager.get("labworks_menu_button"),
+                    callback_data="menu:labworks_menu",
+                ),
             ],
             [
                 InlineKeyboardButton(
@@ -149,6 +155,28 @@ async def handle_menu_navigation(
         return await cmd_start(callback, session, redis)
     elif action == "homeworks_menu":
         return await handle_homeworks_menu(callback, redis)
+
+    elif action == "labworks_menu":
+        return await handle_labworks_menu(callback, redis)
+
+    elif action == "lw_list":
+        status = int(parts[2])
+        kb = await get_labworks_keyboard(callback.from_user.id, redis, status, page=0)
+        if not kb:
+            return await callback.answer(
+                text_manager.get("labworks_empty"), show_alert=True
+            )
+
+        titles = {
+            0: text_manager.get("homeworks_expired"),
+            3: text_manager.get("homeworks_active"),
+            5: text_manager.get("homeworks_deleted"),
+        }
+        header = titles.get(status, text_manager.get("status_default"))
+        await callback.message.edit_text(
+            f"🔬 {titles.get(status, header)}:", reply_markup=kb
+        )
+        return
 
     elif action == "hw_list":
         status = int(parts[2])

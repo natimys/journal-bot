@@ -35,7 +35,15 @@ ru:
   # тексты кнопок
   back_to_menu: "🔙 Назад"
   ## домашние задания
-  homeworks_menu_button: "📖 Домашние задания" # главная кнопка
+  homeworks_menu_button: "📖 Домашние задания"
+  labworks_menu_button: "🔬 Лабораторные работы"
+  labworks_menu: | 
+    🔬 Лабораторные работы:
+    
+    🔴 Истекших: <b>{expired_count}</b>
+    🟢 Активных: <b>{active_count}</b>
+    ⚪ Удаленных: <b>{deleted_count}</b>
+  labworks_empty: "Список лабораторных пуст 📭"
   homeworks_menu: | 
     📚 Домашние задания:
 

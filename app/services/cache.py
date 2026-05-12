@@ -57,14 +57,15 @@ async def update_leaders(client: JournalClient):
 
 
 async def get_homeworks_with_status(
-    client: JournalClient, status: int, group_id: int
+    client: JournalClient, status: int, group_id: int, type: int
 ) -> list[dict]:
-    """получение домашек с опр. статусом
+    """получение домашек/лабораторных с опр. статусом и типом
 
     Args:
         client (JournalClient): Клиент журнала
         status (Literal[0, 1, 2, 3, 5]): 0 - просрочка 3 - активные 5 - удаленные, остальное в constants
         group_id (int): ID группы пользователя
+        type (int): 0 - домашки, 1 - лабораторные
 
     """
     homeworks = []
@@ -73,7 +74,7 @@ async def get_homeworks_with_status(
 
     while page <= 50:
         url = const.GET_HOMEWORKS_URL.format(
-            page=page, status=status, group_id=group_id
+            page=page, status=status, type=type, group_id=group_id
         )
         try:
             response_data = await client.make_request(url)
@@ -135,12 +136,32 @@ async def update_all_homeworks_cache(
     counts = {}
 
     for status in [0, 3, 5]:
-        hw_list = await get_homeworks_with_status(client, status, group_id)
+        hw_list = await get_homeworks_with_status(client, status, group_id, type=0)
         all_data[status] = hw_list
         counts[status] = len(hw_list)
 
     await redis_client.set(
         f"user:{telegram_id}:homeworks_full", json.dumps(all_data), ex=10800
+    )
+    return counts
+
+
+async def update_all_labworks_cache(
+    client: JournalClient, telegram_id: int, group_id: int
+):
+    """
+    Собирает лабораторные всех статусов и сохраняет в редис, возвращает счетчики для статистики.
+    """
+    all_data = {}
+    counts = {}
+
+    for status in [0, 3, 5]:
+        lw_list = await get_homeworks_with_status(client, status, group_id, type=1)
+        all_data[status] = lw_list
+        counts[status] = len(lw_list)
+
+    await redis_client.set(
+        f"user:{telegram_id}:labworks_full", json.dumps(all_data), ex=10800
     )
     return counts
 
@@ -200,6 +221,13 @@ async def update_user_info(client: JournalClient, telegram_id: int):
 
         if gid:
             await update_all_homeworks_cache(client, telegram_id, gid)
+            lab_counts = await update_all_labworks_cache(client, telegram_id, gid)
+            await redis_client.set(
+                f"user:{telegram_id}:labworks_info",
+                json.dumps(lab_counts),
+                ex=10800,
+            )
+
 
     except Exception as e:
         logger.error(f"Global error in update_user_info for {telegram_id}: {e}")

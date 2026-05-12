@@ -23,7 +23,7 @@ GET_AVERAGE_SCORE_URL = (
     "https://msapi.top-academy.ru/api/v2/dashboard/chart/average-progress"
 )
 
-GET_HOMEWORKS_URL = "https://msapi.top-academy.ru/api/v2/homework/operations/list?page={page}&status={status}&type=0&group_id={group_id}"
+GET_HOMEWORKS_URL = "https://msapi.top-academy.ru/api/v2/homework/operations/list?page={page}&status={status}&type={type}&group_id={group_id}"
 """URL для получения дз с различными статусами  
 ### page
 счёт начинается с 1  
