@@ -1,0 +1,128 @@
+import json
+
+from aiogram.types import Message
+from aiogram.utils.keyboard import InlineKeyboardButton, InlineKeyboardBuilder
+
+from app.database.redis import Redis
+from app.text import text_manager
+
+
+async def get_user_homeworks_stats(telegram_id: int, redis: Redis):
+    raw = await redis.get(f"user:{telegram_id}:info")
+    if raw:
+        data = json.loads(raw)
+        loading_text = text_manager.get("loading")
+        return {
+            "expired_count": data.get("expired_count", loading_text),
+            "active_count": data.get("active_count", loading_text),
+            "deleted_count": data.get("deleted_count", loading_text),
+            "average_score": data.get("average_score", loading_text),
+            "average_attendance": data.get("average_attendance", loading_text)
+        }
+    loading_text = text_manager.get("loading")
+    return {"expired_count": loading_text, "active_count": loading_text, "deleted_count": loading_text,
+            "average_score": loading_text}
+
+
+async def get_user_labworks_stats(telegram_id: int, redis: Redis):
+    raw = await redis.get(f"user:{telegram_id}:labworks_info")
+    if raw:
+        data = json.loads(raw)
+        loading_text = text_manager.get("loading")
+        return {
+            "expired_count": data.get("0", loading_text),
+            "active_count": data.get("3", loading_text),
+            "deleted_count": data.get("5", loading_text),
+        }
+    loading_text = text_manager.get("loading")
+    return {"expired_count": loading_text, "active_count": loading_text, "deleted_count": loading_text}
+
+
+async def get_labworks_keyboard(telegram_id: int, redis: Redis, status: int, page: int = 0):
+    """Генерирует клавиатуру со списком лабораторных для конкретного статуса и страницы"""
+
+    raw_data = await redis.get(f"user:{telegram_id}:labworks_full")
+    if not raw_data:
+        return None
+
+    all_labworks = json.loads(raw_data)
+    lw_list = all_labworks.get(str(status), [])
+
+    if not lw_list:
+        return None
+
+    per_page = 5
+    start_idx = page * per_page
+    end_idx = start_idx + per_page
+    current_page_items = lw_list[start_idx:end_idx]
+    total_pages = (len(lw_list) - 1) // per_page + 1
+
+    builder = InlineKeyboardBuilder()
+
+    for lw in current_page_items:
+        btn_text = f"{lw['subject'][:18]} - {lw['date_limit']}"
+        builder.row(InlineKeyboardButton(text=btn_text, callback_data=f"lw_view:{lw['id']}"))
+
+    nav_btns = []
+    if page > 0:
+        nav_btns.append(InlineKeyboardButton(text="⬅️", callback_data=f"lw_page:{status}:{page - 1}"))
+
+    nav_btns.append(InlineKeyboardButton(text=f"{page + 1}/{total_pages}", callback_data="noop"))
+
+    if end_idx < len(lw_list):
+        nav_btns.append(InlineKeyboardButton(text="➡️", callback_data=f"lw_page:{status}:{page + 1}"))
+
+    builder.row(*nav_btns)
+
+    builder.row(InlineKeyboardButton(text="🔙 Назад к статистике", callback_data="menu:labworks_menu"))
+
+    return builder.as_markup()
+
+
+async def get_user_info(message: Message, redis: Redis):
+    return {
+        "name": message.from_user.username,
+        "average_score": 5,
+        "lessons_count": 4,
+    }
+
+
+async def get_homeworks_keyboard(telegram_id: int, redis: Redis, status: int, page: int = 0):
+    """Генерирует клавиатуру со списком ДЗ для конкретного статуса и страницы"""
+
+    raw_data = await redis.get(f"user:{telegram_id}:homeworks_full")
+    if not raw_data:
+        return None
+
+    all_homeworks = json.loads(raw_data)
+    hw_list = all_homeworks.get(str(status), [])
+
+    if not hw_list:
+        return None
+
+    per_page = 5
+    start_idx = page * per_page
+    end_idx = start_idx + per_page
+    current_page_items = hw_list[start_idx:end_idx]
+    total_pages = (len(hw_list) - 1) // per_page + 1
+
+    builder = InlineKeyboardBuilder()
+
+    for hw in current_page_items:
+        btn_text = f"{hw['subject'][:18]} - {hw['date_limit']}"
+        builder.row(InlineKeyboardButton(text=btn_text, callback_data=f"hw_view:{hw['id']}"))
+
+    nav_btns = []
+    if page > 0:
+        nav_btns.append(InlineKeyboardButton(text="⬅️", callback_data=f"hw_page:{status}:{page - 1}"))
+
+    nav_btns.append(InlineKeyboardButton(text=f"{page + 1}/{total_pages}", callback_data="noop"))
+
+    if end_idx < len(hw_list):
+        nav_btns.append(InlineKeyboardButton(text="➡️", callback_data=f"hw_page:{status}:{page + 1}"))
+
+    builder.row(*nav_btns)
+
+    builder.row(InlineKeyboardButton(text="🔙 Назад к статистике", callback_data="menu:homeworks_menu"))
+
+    return builder.as_markup()

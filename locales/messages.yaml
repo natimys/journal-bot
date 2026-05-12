@@ -1,9 +1,119 @@
+# ПРАВИЛА ПЕРЕВОДА:
+# 1. Сохраняйте структуру текста, включая разметку и переменные в фигурных скобках.
+# 2. Переводите только текст, не изменяя код и разметку.
+# 3. Сохраняйте форматирование, включая отступы и переносы строк.
+# 4. Будьте более ✨✨Fashionable✨✨ в переводе, используя эмодзи
 ru:
-  start: "привет мир"
+  # тексты команд
+  start: |
+    👋 <b>Добрый день, {name}!</b>
+
+    Средний балл за месяц: <b>{average_score}</b>
+    Процент посещаемости за месяц: <b>{average_attendance}%</b>
   help: |
     <b>Команды</b>
-    1. /start - отображение меню
-    2. /help - это меню
+    1. /start - отображение главного меню
+    2. /help - получение списка всех команд
     3. /get_schedule - получение расписания на сегодняшний день
-  oleg: "oleg"
+  # аутентификация и авторизация
+  unauthorized: |
+    ⚠️ <b>Вы не авторизованы</b>
+
+    Используйте /login для входа в систему
   no_access: "У вас нет доступа"
+  blocked: "Вы заблокированы"
+  too_many_requests: "Слишком много запросов, попробуйте позже"
+  
+  enter_login: "Введите ваш <b>логин</b> от журнала:"
+  enter_password: "Введите ваш <b>пароль</b> от журнала:"
+  checking_auth_data: "⌛ Проверка ваших данных..."
+  login_success: "✅ Успешный вход!"
+  login_fail: "❌ Ошибка входа"
+  logout_success: "✅ Успешный выход из системы"
+  group_not_found: "❌ Ваша группа не найдена. Обратитесь в поддержку"
+  loading: "🔃 Загрузка..."
+  # тексты кнопок
+  back_to_menu: "🔙 Назад"
+  ## домашние задания
+  homeworks_menu_button: "📖 Домашние задания"
+  labworks_menu_button: "🔬 Лабораторные работы"
+  labworks_menu: | 
+    🔬 Лабораторные работы:
+    
+    🔴 Истекших: <b>{expired_count}</b>
+    🟢 Активных: <b>{active_count}</b>
+    ⚪ Удаленных: <b>{deleted_count}</b>
+  labworks_empty: "Список лабораторных пуст 📭"
+  homeworks_menu: | 
+    📚 Домашние задания:
+
+    🔴 Истекших: <b>{expired_count}</b>
+    🟢 Активных: <b>{active_count}</b>
+    ⚪ Удаленных: <b>{deleted_count}</b>
+  
+  homeworks_empty: "Список пуст 📭"
+  
+  # в этих 3 статусах эмодзи не ставить, само подставится в нужных местах
+  homeworks_expired: "Просроченные"
+  homeworks_active: "Активные"
+  homeworks_deleted: "Удаленные"
+
+  homeworks_not_found: "Данные задания не найдены или устарели 🔒"
+
+  # страница самого дз
+  teacher: "👤 Преподаватель:"
+  expires_at: "⏳ Срок до:"
+  subject: "📝 Тема:"
+  comment: "💬 Комментарий:"
+
+  download_homework: "📎 Скачать"
+  upload_homework: "🔃 Загрузить домашнее задание"
+  uploading_homework_menu: |
+    📥 <b>Загрузка ответа</b>
+    Присылайте файлы (фото или документы) по одному или пачкой.
+    Когда закончите, нажмите кнопку ниже.
+  send_homework: "✅ Отправить"
+  undo_homework: "❌ Отмена"
+  file_added: "✅ Файл добавлен. Всего: <b>{file_count}</b>"
+  send_homework_files_first: "❌ Сначала пришлите файлы!"
+  archiving_files: "⏳ <b>Начинаю упаковку файлов...</b>"
+  sending_homeworks_to_journal: "🚀 <b>Отправляю архив в журнал...</b>"
+  homework_send_success: "✅ <b>Задание успешно отправлено!</b>"
+  homework_send_error: | 
+    ❌ <b>Ошибка при отправке:</b>
+    <code>{error}</code>
+  # расписание
+  schedule_menu_button: "📅 Расписание"
+  schedule_menu_title: |
+    ℹ️ <b>Расписание</b>
+    
+    Выбери период, чтобы увидеть актуальный график занятий:
+  get_schedule_today: "📍 Сегодня"
+  schedule_today_label: "✨ <b>Расписание на сегодня</b>"
+
+  get_schedule_tomorrow: "🌅 Завтра"
+  schedule_tomorrow: "📅 <b>Расписание на завтра</b>"
+
+  get_schedule_week: "🗓️ Неделя"
+  schedule_week: "📑 <b>Расписание на всю неделю</b>"
+
+  schedule_empty: "🕊️ <b>На сегодня нет занятий!</b>"
+  get_schedule_error: "❌ Ошибка при получении расписания. Попробуйте позже."
+  schedule_entry: "⏰ {started_at} - {finished_at} | 📖 {subject_name}"
+
+
+  # дни недели, тут укорачиваю с weekday до wd
+  wd_0: "Понедельник"
+  wd_1: "Вторник"
+  wd_2: "Среда"
+  wd_3: "Четверг"
+  wd_4: "Пятница"
+  wd_5: "Суббота"
+  wd_6: "Воскресенье"
+  schedule_day_header: "🗓 <b>{weekday_name}, {date}</b>"
+
+  leaderboard_title: "⭐ <b>Топ-10 лидеров по очкам</b>"
+  leaderboard_entry: "{i}. {name} - {score} очков"
+
+  # лидерборд
+  get_leaderboard: "⭐ Лидерборд"

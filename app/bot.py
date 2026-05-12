@@ -2,25 +2,50 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from app.handlers.common import router as common_router
-from app.handlers.request import router as request_router
-from app.middleware.whitelist import WhitelistMiddleware
+from app.handlers import all_routers
+
+from app.middleware import (
+    BlacklistMiddleware,
+    WhitelistMiddleware,
+    DbSessionMiddleware,
+    RedisMiddleware,
+    ThrottlingMiddleware,
+)
+
 from app.config import config
 from app.logger import logger
+from app.database.postgres import session_maker
+from app.database.redis import redis_client
 
 dp = Dispatcher()
-dp.include_router(common_router)
-dp.include_router(request_router)
+dp.include_routers(*all_routers)
 
-dp.message.middleware(WhitelistMiddleware())
+# ставим режим работы и проверки юзера ботом
+if config.MODE == "WHITELIST":
+    if config.LIST:
+        dp.message.middleware(WhitelistMiddleware())
+    else:
+        raise ValueError("List for whitelist not found in env")
+elif config.MODE == "BLACKLIST" and config.LIST: # тут также проверка на наличие листа, потому что лист может быть пустым
+    dp.message.middleware(BlacklistMiddleware())
 
-@logger.log_with_timer()
+# антиспам мидлвер, блокирует юзера если он делает слишком много запросов; блок на 500 мс
+dp.message.middleware(
+    ThrottlingMiddleware(redis=redis_client, limit=500)
+)
+dp.callback_query.middleware(
+    ThrottlingMiddleware(redis=redis_client, limit=500)
+)
+
+# мидлвары для работы с базой данных, прокидывают сессию в хэндлеры
+dp.message.middleware(DbSessionMiddleware(session_maker))
+dp.callback_query.middleware(DbSessionMiddleware(session_maker))
+dp.update.middleware(RedisMiddleware(redis_client))
+
+
 async def run_bot():
-    token = config.get("BOT_TOKEN")
-    if not token:
-        raise ValueError("BOT_TOKEN is not set in config")
-    bot = Bot(token=token, 
-              default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    token = config.BOT_TOKEN
+    bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     logger.info("Bot started!")
-    
+
     await dp.start_polling(bot)
